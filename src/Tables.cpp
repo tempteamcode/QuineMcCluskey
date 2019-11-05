@@ -5,7 +5,7 @@
 
 #include "LUTs.h"
 
-void fill_table(byte* sbox, table_t& table)
+void fill_DDT(byte* sbox, DDT_t& table)
 {
 	byte i1 = 0;
 	for (;;)
@@ -26,54 +26,23 @@ void fill_table(byte* sbox, table_t& table)
 	}
 }
 
-void fill_table(const subtables_t& subtables, tablestar_t& table)
+void DDT_extract_minterms(const DDT_t& table, int value, bool keep, minterms_t& minterms)
 {
-    for (const subtable_t& subtable : subtables)
-    {
-        for (const subtablecell_t& subtablecell : subtable)
-        {
-            for (auto it = subtablecell.begin(); it != subtablecell.end(); ++it)
-            {
-                if ((*it).second)
-                {
-                    table.push_back((*it).first);
-                }
-            }
-        }
-    }
-}
+	two_bytes tuple;
+	byte& d1 = tuple.byte_1;
+	byte& d2 = tuple.byte_2;
 
-void fill_subtables(table_t& table, int value, bool keep, subtables_t& subtables)
-{
-	subtable_t& subtable = subtables[0];
-
-	table_extract(table, value, keep, subtable);
-
-	QuineMcCluskey(subtables);
-}
-
-void table_extract(table_t& table, int value, bool keep, subtable_t& subtable)
-{
-	subtable.resize(byte_bits * 2 + 1);
-
-	two_two_bytes tuple;
-	tuple.two_bytes_2.bytes = 0;
-
-	byte d1 = 0;
+	d1 = 0;
 	for (;;)
 	{
-		byte d2 = 0;
+		d2 = 0;
 		for (;;)
 		{
 			bignum count = table[d1][d2];
 
 			if ((count == value) == keep)
 			{
-				tuple.two_bytes_1.byte_1 = d1;
-				tuple.two_bytes_1.byte_2 = d2;
-
-				unsigned char bitscount = LUT_bitscount_256[d1] + LUT_bitscount_256[d2];
-				subtable[bitscount][tuple] = true;
+				minterms.push_back(tuple);
 			}
 
 			if (((++d2) & byte_mask) == 0) break;
@@ -83,95 +52,131 @@ void table_extract(table_t& table, int value, bool keep, subtable_t& subtable)
 	}
 }
 
-void QuineMcCluskey(subtables_t& subtables)
+void QuineMcCluskey(const minterms_t& minterms, termsmap_t& termsmap)
 {
-	for (unsigned int col = 0; col + 1 < subtables.size(); col++)
+	termsmapcol_t& mintermscol = termsmap[0];
+	mintermscol.resize(byte_bits * 2 + 1);
+
+	two_two_bytes tuple;
+
+	tuple.two_bytes_2.bytes = 0;
+	for (const two_bytes& minterm : minterms)
 	{
-		subtable_t& subtablecurr = subtables[col];
-		subtable_t& subtablenext = subtables[col + 1];
+		unsigned char bitscount = LUT_bitscount_256[minterm.byte_1] + LUT_bitscount_256[minterm.byte_2];
+
+		tuple.two_bytes_1.bytes = minterm.bytes;
+		mintermscol[bitscount].first.push_back(tuple);
+	}
+	for (termsmapcell_t& mintermsgroup : mintermscol)
+	{
+		mintermsgroup.second.resize(mintermsgroup.first.size(), 0b1);
+	}
+
+
+	two_two_bytes diffs;
+	two_two_bytes tupleprod;
+
+	for (unsigned int col = 0; col + 1 < termsmap.size(); col++)
+	{
+		termsmapcol_t& subtablecurr = termsmap[col];
+		termsmapcol_t& subtablenext = termsmap[col + 1];
 		subtablenext.resize(subtablecurr.size() - 1);
 
-		for (unsigned int row = 0; row+1 < subtablecurr.size(); row++)
+		for (unsigned int row = 0; row + 1 < subtablecurr.size(); row++)
 		{
-			subtablecell_t& cellcurr = subtablecurr[row];
-			subtablecell_t& cellnext = subtablecurr[row + 1];
-			subtablecell_t& cellprod = subtablenext[row];
+			termsmapcell_t& cellcurr = subtablecurr[row];
+			termsmapcell_t& cellnext = subtablecurr[row + 1];
+			termsmapcell_t& cellprod = subtablenext[row];
 
-            for (auto itcurr = cellcurr.begin(); itcurr != cellcurr.end(); ++itcurr)
-            {
-                const two_two_bytes& itemcurr = (*itcurr).first;
-                for (auto itnext = cellnext.begin(); itnext != cellnext.end(); ++itnext)
-                {
-                    const two_two_bytes& itemnext = (*itnext).first;
+			unsigned int icurrsize = static_cast<unsigned int>(cellcurr.first.size());
+			unsigned int inextsize = static_cast<unsigned int>(cellnext.first.size());
 
-					two_bytes diffany; diffany.bytes = (itemcurr.two_bytes_2.bytes ^ itemnext.two_bytes_2.bytes);
-					two_bytes diffbit; diffbit.bytes = (itemcurr.two_bytes_1.bytes ^ itemnext.two_bytes_1.bytes);// &~(itemcurr.two_bytes_2.bytes | itemnext.two_bytes_2.bytes);
-					if (LUT_bitscount_256[diffbit.byte_1] + LUT_bitscount_256[diffbit.byte_2] + LUT_bitscount_256[diffany.byte_1] + LUT_bitscount_256[diffany.byte_2] == 1)
+			const two_two_bytes* itcurr = cellcurr.first.data();
+			for (unsigned int icurr = 0; icurr < icurrsize; itcurr++, icurr++)
+			{
+				const two_two_bytes& itemcurr = *itcurr;
+				const two_two_bytes* itnext = cellnext.first.data();
+				for (unsigned int inext = 0; inext < inextsize; itnext++, inext++)
+				{
+					const two_two_bytes& itemnext = *itnext;
+					diffs.bytes = itemcurr.bytes ^ itemnext.bytes;
+					if (LUT_bitscount_256[diffs.two_bytes_1.byte_1] + LUT_bitscount_256[diffs.two_bytes_1.byte_2] + LUT_bitscount_256[diffs.two_bytes_2.byte_1] + LUT_bitscount_256[diffs.two_bytes_2.byte_2] == 1)
 					{
-						two_two_bytes tupleprod;
 						tupleprod.two_bytes_1.bytes = (itemcurr.two_bytes_1.bytes & itemnext.two_bytes_1.bytes);
-						tupleprod.two_bytes_2.bytes = (itemcurr.two_bytes_2.bytes | itemnext.two_bytes_2.bytes) | diffbit.bytes;
+						tupleprod.two_bytes_2.bytes = ((itemcurr.two_bytes_2.bytes | itemnext.two_bytes_2.bytes) | diffs.two_bytes_1.bytes);
 
-						cellprod[tupleprod] = true;
+						auto pos = std::lower_bound(cellprod.first.begin(), cellprod.first.end(), tupleprod);
+						if (pos == cellprod.first.end() || (!((*pos) == tupleprod)))
+						{
+							cellprod.first.insert(pos, tupleprod);
+						}
 
-                        (*itcurr).second = false;
-                        (*itnext).second = false;
+						cellcurr.second[icurr] = 0b0;
+						cellnext.second[inext] = 0b0;
 					}
-                }
-            }
+				}
+			}
+		}
+
+		for (termsmapcell_t& subtablecell : subtablenext)
+		{
+			subtablecell.second.resize(subtablecell.first.size(), 0b1);
 		}
 	}
 }
 
-#include "print.h"
-
-void table_filter(subtable_t& minterms, tablestar_t& table)
+void termsmap_extract_primeimplicants(const termsmap_t& termsmap, terms_t& primeimplicants)
 {
-//  for (subtablecell_t cell : minterms)
-//  {
-//      for (auto& it : cell)
-//      {
-//          it.second = true;
-//      }
-//  }
+	for (const termsmapcol_t& termsmapcol : termsmap)
+	{
+		for (const termsmapcell_t& implicants : termsmapcol)
+		{
+			unsigned int isize = static_cast<unsigned int>(implicants.first.size());
+			const auto* it = implicants.second.data();
+			for (unsigned int i = 0; i < isize; it++, i++)
+			{
+				if (*it != 0b0)
+				{
+					primeimplicants.push_back(implicants.first[i]);
+				}
+			}
+		}
+	}
+}
 
-    auto match = [] (const two_two_bytes& lhs, const two_two_bytes& rhs)
-    {
-        return
-            ((lhs.two_bytes_2.bytes & (~rhs.two_bytes_2.bytes)) == 0) &&
-            (((lhs.two_bytes_1.bytes ^ rhs.two_bytes_1.bytes) & (~rhs.two_bytes_2.bytes)) == 0);
-    };
+/*
+#include "print.h"
+*/
 
-    for (auto itr = table.cend(); itr != table.cbegin();)
-    {
-        --itr;
+void primeimplicants_reduce_fast(minterms_t& minterms, terms_t& primeimplicants)
+{
+	for (auto itr = primeimplicants.cend(); itr != primeimplicants.cbegin();)
+	{
+		--itr;
+		const two_two_bytes r = *itr;
 
-        bool useful = false;
+		bool useful = false;
 
-        for (subtablecell_t& cell : minterms)
-        {
-            for (auto itl = cell.cbegin(); itl != cell.cend(); ++itl)
-            {
-//              if ((*itl).second)
-//              {
-                    if (match((*itl).first, (*itr)))
-                    {
-                        print_bin_star(std::cout << '\n', itl->first.two_bytes_1.byte_1, itl->first.two_bytes_2.byte_1);
-                        print_bin_star(std::cout << " --> ", itl->first.two_bytes_1.byte_2, itl->first.two_bytes_2.byte_2);
-                        print_bin_star(std::cout << " <== ", itr->two_bytes_1.byte_1, itr->two_bytes_2.byte_1);
-                        print_bin_star(std::cout << " --> ", itr->two_bytes_1.byte_2, itr->two_bytes_2.byte_2);
-                        useful = true;
+		for (auto itl = minterms.cbegin(); itl != minterms.cend(); ++itl)
+		{
+			if (minterm_match((*itl), r))
+			{
+				/*
+				print_bin_star(std::cout << '\n', itl->two_bytes_1.byte_1, itl->two_bytes_2.byte_1);
+				print_bin_star(std::cout << " --> ", itl->two_bytes_1.byte_2, itl->two_bytes_2.byte_2);
+				print_bin_star(std::cout << " <== ", itr->two_bytes_1.byte_1, itr->two_bytes_2.byte_1);
+				print_bin_star(std::cout << " --> ", itr->two_bytes_1.byte_2, itr->two_bytes_2.byte_2);
+				*/
+				useful = true;
 
-                        itl = cell.erase(itl);
-                        if (itl == cell.cend()) break;
-                    }
-//              }
-            }
-        }
-        
-        if (!useful)
-        {
-            itr = table.erase(itr);
-        }
-    }
+				itl = minterms.erase(itl);
+				if (itl == minterms.cend()) break;
+			}
+		}
+
+		if (!useful)
+		{
+			itr = primeimplicants.erase(itr);
+		}
+	}
 }

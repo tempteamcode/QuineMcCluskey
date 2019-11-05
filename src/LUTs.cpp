@@ -20,7 +20,7 @@ void LUT_hex_init()
 void LUT_bitscount_init()
 {
 	LUT_bitscount_256[0] = 0;
-	for (int g = 1; g <= 256; g <<= 1)
+	for (int g = 1; g < 256; g <<= 1)
 	{
 		for (int i = 0; i < g; ++i)
 		{
