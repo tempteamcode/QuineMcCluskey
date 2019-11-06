@@ -6,14 +6,14 @@ template <typename type>
 using DDT_t = typename type::big[type::byte_values][type::byte_values];
 
 template <typename type>
-void fill_DDT(typename type::byte* sbox, DDT_t<type>& table);
+void fill_DDT(const typename type::byte* sbox, DDT_t<type>& table);
 
 template <typename type, typename typepair>
 void DDT_extract_minterms(const DDT_t<type>& table, typename type::big value, bool keep, minterms_t<typepair>& minterms);
 
 
 template <typename type>
-void fill_DDT(typename type::byte* sbox, DDT_t<type>& table)
+void fill_DDT(const typename type::byte* sbox, DDT_t<type>& table)
 {
 	using byte = typename type::byte;
 

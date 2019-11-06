@@ -37,7 +37,7 @@ void primeimplicants_reduce_fast(minterms_t<type>& minterms, terms_t<type>& prim
 
 		bool useful = false;
 
-		for (auto itl = minterms.cbegin(); itl != minterms.cend(); ++itl)
+		for (auto itl = minterms.cbegin(); itl != minterms.cend();)
 		{
 			if (minterm_match<type>((*itl), r))
 			{
@@ -48,7 +48,10 @@ void primeimplicants_reduce_fast(minterms_t<type>& minterms, terms_t<type>& prim
 				useful = true;
 
 				itl = minterms.erase(itl);
-				if (itl == minterms.cend()) break;
+			}
+			else
+			{
+				++itl;
 			}
 		}
 
