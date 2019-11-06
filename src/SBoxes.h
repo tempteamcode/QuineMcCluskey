@@ -2,6 +2,15 @@
 
 #include <cstdint>
 
-extern "C" void initialize_aes_sbox(uint8_t sbox[256]);
+extern uint8_t SBox_AES[256];
 
-const auto fill_SBox_AES = initialize_aes_sbox;
+extern const uint8_t SBox_Midori128_S0[256];
+extern const uint8_t SBox_Midori128_S1[256];
+extern const uint8_t SBox_Midori128_S2[256];
+extern const uint8_t SBox_Midori128_S3[256];
+
+void init_SBox_AES(uint8_t sbox[256]);
+
+inline void init_SBoxes() {
+	init_SBox_AES(SBox_AES);
+}

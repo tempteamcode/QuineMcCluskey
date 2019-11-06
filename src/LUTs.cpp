@@ -5,7 +5,7 @@ char LUT_hex_256[256][4];
 const unsigned char LUT_bitscount_16[16] = {0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4};
 unsigned char LUT_bitscount_256[256];
 
-void LUT_hex_init()
+void init_LUT_hex()
 {
 	char* chars = &LUT_hex_256[0][0];
 	unsigned char value = 0;
@@ -17,7 +17,7 @@ void LUT_hex_init()
 	} while (++value);
 }
 
-void LUT_bitscount_init()
+void init_LUT_bitscount()
 {
 	LUT_bitscount_256[0] = 0;
 	for (int g = 1; g < 256; g <<= 1)
@@ -29,8 +29,8 @@ void LUT_bitscount_init()
 	}
 }
 
-void LUTs_init()
+void init_LUTs()
 {
-	LUT_hex_init();
-	LUT_bitscount_init();
+	init_LUT_hex();
+	init_LUT_bitscount();
 }

@@ -4,10 +4,10 @@
 #include <iomanip>
 #include <bitset>
 
-#include "types.h"
 #include "LUTs.h"
-#include "Tables.h"
-#include "Charts.h"
+#include "DDTs.h"
+#include "terms.h"
+#include "Heuristics.h"
 
 template<typename int_t>
 inline void print_hex(std::ostream& out, int_t value)
@@ -30,32 +30,153 @@ inline void print_bin(std::ostream& out, int_t value)
 	out << std::bitset<sizeof(int_t) * 8>(value);
 }
 
-inline void print_bin_star(std::ostream& out, unsigned char value, unsigned char stars)
+template <typename type>
+inline void print_bin_star(std::ostream& out, typename type::byte value, typename type::byte stars)
 {
-	for (unsigned char bit = 0b10000000; bit != 0; bit >>= 1)
+	for (typename type::byte bit = 1 << (type::bits_nb - 1); bit != 0; bit >>= 1)
 	{
 		out << ((stars & bit) != 0 ? '-' : ((value & bit) != 0 ? '1' : '0'));
 	}
 }
 
-inline void unprint_bin_star(std::istream& in, unsigned char& value, unsigned char& stars)
+template <typename type>
+inline void unprint_bin_star(std::istream& in, typename type::byte& value, typename type::byte& stars)
 {
 	value = 0;
 	stars = 0;
 	char c;
-	for (unsigned char bit = 0b10000000; bit != 0; bit >>= 1)
+	for (typename type::byte bit = 1 << (type::bits_nb - 1); bit != 0; bit >>= 1)
 	{
 		in.get(c);
 		(c == '-' ? stars : (c == '1' ? value : bit)) |= bit;
 	}
 }
 
-void print_sbox(std::ostream& out, const byte* sbox);
+template <typename type>
+void print_sbox(std::ostream& out, const typename type::byte* sbox);
 
-void print_table(std::ostream& out, const DDT_t& table);
+template <typename type>
+void print_table(std::ostream& out, const DDT_t<type>& table);
 
-void print_table(std::ostream& out, const terms_t& table);
-void unprint_table(std::istream& in, terms_t& table);
+template <typename type>
+void print_table(std::ostream& out, const terms_t<type>& table);
+template <typename type>
+void unprint_table(std::istream& in, terms_t<type>& table);
 
-void print_chart(std::ostream& out, const chart_t& chart);
-void unprint_chart(std::istream& in, chart_t& chart);
+template <typename type>
+void print_chart(std::ostream& out, const chart_t<type>& chart);
+template <typename type>
+void unprint_chart(std::istream& in, chart_t<type>& chart);
+
+
+template <typename type>
+void print_sbox(std::ostream& out, const typename type::byte* sbox)
+{
+	using byte = typename type::byte;
+
+	const byte* ptr = sbox;
+
+	byte index = 0;
+	byte column = 0;
+	for (;;)
+	{
+		if (column == 0)
+		{
+			column = 16;
+			out << '\n';
+		}
+
+		column--;
+		print_hex<byte>(out << "  ", *ptr++);
+
+		if (((++index) & type::byte_mask) == 0) break;
+	}
+}
+
+template <typename type>
+void print_table(std::ostream& out, const DDT_t<type>& table)
+{
+	using byte = typename type::byte;
+	using big = typename type::big;
+
+	byte d1 = 0;
+	for (;;)
+	{
+		byte d2 = 0;
+		for (;;)
+		{
+			big count = table[d1][d2];
+
+			if (count > 0)
+			{
+				print_bin(out << '\n', d1);
+				print_bin(out << " --> ", d2);
+				out << " (" << count << '/' << type::byte_values << ')';
+			}
+
+			if (((++d2) & type::byte_mask) == 0) break;
+		}
+
+		if (((++d1) & type::byte_mask) == 0) break;
+	}
+}
+
+template <typename type>
+void print_table(std::ostream& out, const terms_t<type>& table)
+{
+	for (const typename type::pair& tuple : table)
+	{
+		print_bin_star<type>(out << '\n', tuple.first, tuple.second);
+	}
+}
+
+template <typename type>
+void unprint_table(std::istream& in, terms_t<type>& table)
+{
+	typename type::pair tuple;
+
+	char c;
+	while (in.get(c)) // '\n'
+	{
+		unprint_bin_star<type>(in, tuple.first, tuple.second);
+		table.push_back(tuple);
+	}
+}
+
+template <typename type>
+void print_chart(std::ostream& out, const chart_t<type>& chart)
+{
+	out << "((" << chart.size() << "))\n";
+	for (auto& row : chart)
+	{
+		out << '(' << row.size() << ')';
+		for (int val : row) out << ' ' << val;
+		out << '\n';
+	}
+}
+
+template <typename type>
+void unprint_chart(std::istream& in, chart_t<type>& chart)
+{
+	typename type::big size;
+	char c;
+
+	in.get(c).get(c); // "(("
+	in >> size;
+	chart.resize(size);
+	in.get(c).get(c).get(c); // "))\n"
+
+	for (auto& row : chart)
+	{
+		in.get(c); // '('
+		in >> size;
+		row.resize(size);
+		in.get(c); // ')'
+		for (typename type::big& val : row)
+		{
+			in.get(c); // ' '
+			in >> val;
+		}
+		in.get(c); // '\n'
+	}
+}
