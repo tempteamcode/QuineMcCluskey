@@ -8,6 +8,7 @@
 #include "SBoxes.h"
 #include "QuineMcCluskey.h"
 #include "Heuristics.h"
+#include "PetricksMethod.h"
 
 #include "types.h"
 
@@ -23,10 +24,10 @@ static const int count_SBoxes = 5;
 static const char * const names_SBoxes[count_SBoxes] = {"AES", "M0", "M1", "M2", "M3"};
 typedef const uint8_t (*sbox_ptr)[256];
 static const sbox_ptr array_SBoxes[count_SBoxes] = { &SBox_AES, &SBox_Midori128_S0, &SBox_Midori128_S1, &SBox_Midori128_S2, &SBox_Midori128_S3 };
-static const int count_heuristics = 4;
-static const char * const names_heuristics[count_heuristics] = {"fastest", "maxmt", "maxmtminpi", "mostlikely"};
+static const int count_heuristics = 5;
+static const char * const names_heuristics[count_heuristics] = {"fastest", "maxmt", "maxmtminpi", "mostlikely", "petrick"};
 typedef void (*heuristic_ptr) (const minterms_t<with16bits>&, const terms_t<with16bits>&, chart_t<with16bits>&, chart_t<with16bits>&, terms_t<with16bits>&);
-static const heuristic_ptr array_heuristics[count_heuristics] = { &primeimplicants_reduce_good<with16bits>, &primeimplicants_reduce_good<with16bits>, &primeimplicants_reduce_well<with16bits>, &primeimplicants_reduce_hope<with16bits> };
+static const heuristic_ptr array_heuristics[count_heuristics] = { &primeimplicants_reduce_good<with16bits>, &primeimplicants_reduce_good<with16bits>, &primeimplicants_reduce_well<with16bits>, &primeimplicants_reduce_hope<with16bits>, &PetricksMethod<with16bits> };
 
 bool str_eq(const char* str, const char* str2)
 {
@@ -88,7 +89,7 @@ int main(int argc, const char* argv[])
 
 	const char * name_value;
 	if (argc <= 1)
-		parseArgs(names_SBoxes[0], name_value = "!0", names_heuristics[count_heuristics - 1]);
+		parseArgs(names_SBoxes[0], name_value = "!0", names_heuristics[count_heuristics - 2]);
 	else if ((argc != 4) || (!parseArgs(argv[1], name_value = argv[2], argv[3])))
 	{
 		std::cerr << "Incorrect command line arguments." << std::endl;

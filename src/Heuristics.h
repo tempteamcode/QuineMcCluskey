@@ -1,15 +1,9 @@
 #pragma once
 
-#include "terms.h"
+#include "QuineMcCluskey.h"
 
 template <typename type>
 void primeimplicants_reduce_fast(minterms_t<type>& minterms, terms_t<type>& primeimplicants);
-
-template <typename type>
-using chart_t = std::vector<std::vector<typename type::big>>;
-
-template <typename type>
-void fill_chart(const minterms_t<type>& minterms, const terms_t<type>& primeimplicants, chart_t<type>& mintermschart, chart_t<type>& primeimplicantschart);
 
 template <typename type>
 void primeimplicants_reduce_good(const minterms_t<type>& minterms, const terms_t<type>& primeimplicants, chart_t<type>& mintermschart, chart_t<type>& primeimplicantschart, terms_t<type>& result);
@@ -62,37 +56,11 @@ void primeimplicants_reduce_fast(minterms_t<type>& minterms, terms_t<type>& prim
 	}
 }
 
-
-template <typename type>
-void fill_chart(const minterms_t<type>& minterms, const terms_t<type>& primeimplicants, chart_t<type>& mintermschart, chart_t<type>& primeimplicantschart)
-{
-	using big = typename type::big;
-
-	big mtsize = static_cast<big>(minterms.size());
-	big pisize = static_cast<big>(primeimplicants.size());
-
-	mintermschart.resize(mtsize);
-	primeimplicantschart.resize(pisize);
-
-	const auto* itpi = primeimplicants.data();
-	for (big ipi = 0; ipi < pisize; itpi++, ipi++)
-	{
-		auto pi = (*itpi);
-		const auto* itmt = minterms.data();
-		for (big imt = 0; imt < mtsize; itmt++, imt++)
-		{
-			if (minterm_match<type>((*itmt), pi))
-			{
-				mintermschart[imt].push_back(ipi);
-				primeimplicantschart[ipi].push_back(imt);
-			}
-		}
-	}
-}
-
 template <typename type>
 void primeimplicants_reduce_good(const minterms_t<type>& minterms, const terms_t<type>& primeimplicants, chart_t<type>& mintermschart, chart_t<type>& primeimplicantschart, terms_t<type>& result)
 {
+	primeimplicants_reduce_step_unique<type>(minterms, primeimplicants, mintermschart, primeimplicantschart, result);
+
 	using big = typename type::big;
 
 	big mtsize = static_cast<big>(minterms.size());
@@ -123,6 +91,7 @@ void primeimplicants_reduce_good(const minterms_t<type>& minterms, const terms_t
 		pimt.clear();
 	};
 
+	/*
 	for (big imt = 0; imt < mtsize; imt++)
 	{
 		if (mintermschart[imt].size() == 1)
@@ -131,6 +100,7 @@ void primeimplicants_reduce_good(const minterms_t<type>& minterms, const terms_t
 			chart_remove_pi(ipi);
 		}
 	}
+	*/
 
 	for(;;)
 	{
@@ -156,6 +126,8 @@ void primeimplicants_reduce_good(const minterms_t<type>& minterms, const terms_t
 template <typename type>
 void primeimplicants_reduce_well(const minterms_t<type>& minterms, const terms_t<type>& primeimplicants, chart_t<type>& mintermschart, chart_t<type>& primeimplicantschart, terms_t<type>& result)
 {
+	primeimplicants_reduce_step_unique<type>(minterms, primeimplicants, mintermschart, primeimplicantschart, result);
+
 	using big = typename type::big;
 
 	big mtsize = static_cast<big>(minterms.size());
@@ -186,6 +158,7 @@ void primeimplicants_reduce_well(const minterms_t<type>& minterms, const terms_t
 		pimt.clear();
 	};
 
+	/*
 	for (big imt = 0; imt < mtsize; imt++)
 	{
 		if (mintermschart[imt].size() == 1)
@@ -194,6 +167,7 @@ void primeimplicants_reduce_well(const minterms_t<type>& minterms, const terms_t
 			chart_remove_pi(ipi);
 		}
 	}
+	*/
 
 	for(;;)
 	{
@@ -229,6 +203,8 @@ void primeimplicants_reduce_well(const minterms_t<type>& minterms, const terms_t
 template <typename type>
 void primeimplicants_reduce_hope(const minterms_t<type>& minterms, const terms_t<type>& primeimplicants, chart_t<type>& mintermschart, chart_t<type>& primeimplicantschart, terms_t<type>& result)
 {
+	primeimplicants_reduce_step_unique<type>(minterms, primeimplicants, mintermschart, primeimplicantschart, result);
+
 	using big = type::big;
 
 	std::vector<float> piscore(primeimplicants.size());
@@ -291,6 +267,7 @@ void primeimplicants_reduce_hope(const minterms_t<type>& minterms, const terms_t
 		piscore[ipi] = score;
 	}
 
+	/*
 	for (big imt = 0; imt < mtsize; imt++)
 	{
 		if (mintermschart[imt].size() == 1)
@@ -299,6 +276,7 @@ void primeimplicants_reduce_hope(const minterms_t<type>& minterms, const terms_t
 			chart_remove_pi(ipi);
 		}
 	}
+	*/
 
 	for(;;)
 	{
