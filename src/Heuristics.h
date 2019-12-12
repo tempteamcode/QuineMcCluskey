@@ -17,9 +17,7 @@ void primeimplicants_reduce_hope(const minterms_t<type>& minterms, const terms_t
 
 #include <algorithm>
 
-/* #include "print.h" */
-
-template <typename type> /* ,typename typehalf */
+template <typename type>
 void primeimplicants_reduce_fast(minterms_t<type>& minterms, terms_t<type>& primeimplicants)
 {
 	using pair = typename type::pair;
@@ -35,10 +33,6 @@ void primeimplicants_reduce_fast(minterms_t<type>& minterms, terms_t<type>& prim
 		{
 			if (minterm_match<type>((*itl), r))
 			{
-				/*
-				print_bin_star<type>(out << '\n', itl.first, itl.second);
-				print_bin_star<type>(out << " <== ", itr.first, itr.second);
-				*/
 				useful = true;
 
 				itl = minterms.erase(itl);

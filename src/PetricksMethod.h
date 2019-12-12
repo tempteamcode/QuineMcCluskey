@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bitset>
+#include <iostream>
 
 #include "terms.h"
 
@@ -11,33 +12,40 @@ template <typename type>
 void primeimplicants_reduce_step_essential(const minterms_t<type>& minterms, const terms_t<type>& primeimplicants, chart_t<type>& mintermschart, chart_t<type>& primeimplicantschart, terms_t<type>& result);
 
 template <typename type>
-void PetricksMethod(const minterms_t<type>& minterms, const terms_t<type>& primeimplicants, chart_t<type>& mintermschart, chart_t<type>& primeimplicantschart, terms_t<type>& result);
+void PetricksMethod(const minterms_t<type>& minterms_full, const terms_t<type>& primeimplicants_full, chart_t<type>& mintermschart_full, chart_t<type>& primeimplicantschart_full, terms_t<type>& result);
 
 template <typename type>
-void PetricksMethod(const minterms_t<type>& minterms, const terms_t<type>& primeimplicants, chart_t<type>& mintermschart, chart_t<type>& primeimplicantschart, terms_t<type>& result)
+void PetricksMethod(const minterms_t<type>& minterms_full, const terms_t<type>& primeimplicants_full, chart_t<type>& mintermschart_full, chart_t<type>& primeimplicantschart_full, terms_t<type>& result)
 {
-	// primeimplicants_reduce_hope<type>(...);
-	// big lower_bound = result.size();
-	// result.clear();
-
-	primeimplicants_reduce_step_essential<type>(minterms, primeimplicants, mintermschart, primeimplicantschart, result);
-	// primeimplicants_reduce_step_remove<type>(minterms, primeimplicants, mintermschart, primeimplicantschart);
+	primeimplicants_reduce_step_essential<type>(minterms_full, primeimplicants_full, mintermschart_full, primeimplicantschart_full, result);
+	// primeimplicants_reduce_step_remove<type>(minterms_full, primeimplicants_full, mintermschart_full, primeimplicantschart_full);
+	minterms_t<type> minterms;
+	terms_t<type> primeimplicants;
+	chart_t<type> mintermschart;
+	chart_t<type> primeimplicantschart;
+	fill_chart_reduced<type>(minterms_full, primeimplicants_full, mintermschart_full, primeimplicantschart_full, minterms, primeimplicants, mintermschart, primeimplicantschart);
 
 	using big = type::big;
+
+	big upperbound;
+	{
+		terms_t<type> result_upperbound;
+		primeimplicants_reduce_hope<type>(minterms_full, primeimplicants_full, mintermschart_full, primeimplicantschart_full, result_upperbound);
+		upperbound = static_cast<big>(result_upperbound.size() - result.size());
+	}
 
 	big mtsize = static_cast<big>(minterms.size());
 	big pisize = static_cast<big>(primeimplicants.size());
 
-	if (pisize > 256) throw std::overflow_error("");
-	typedef PetricksTuple<256> piset;
+	if (pisize > 128) throw std::overflow_error("");
+	typedef PetricksTuple<128> piset;
 
 	std::vector<piset> pisets;
 	std::vector<piset> pisets_prev;
 
-	{
-		piset pis_empty;
-		pisets.push_back(pis_empty);
-	}
+	//piset pis_empty;
+	//pisets.push_back(pis_empty);
+	pisets.emplace_back();
 
 	auto pisets_add = [&] (const piset& pis_new)
 	{
@@ -58,8 +66,8 @@ void PetricksMethod(const minterms_t<type>& minterms, const terms_t<type>& prime
 			}
 		}
 
-		// if (pis_new.count() <= lower_bound)
-		pisets.push_back(pis_new);
+		if (pis_new.count() <= upperbound)
+			pisets.push_back(pis_new);
 	};
 
 	for (big imt = 0; imt < mtsize; imt++)
@@ -93,6 +101,8 @@ void PetricksMethod(const minterms_t<type>& minterms, const terms_t<type>& prime
 				}
 			}
 		}
+
+		std::cout << ' ' << imt << '/' << mtsize << " - " << pisets.size() << " candidate subsets" << std::endl;
 	}
 
 	big min = pisize + 1;

@@ -28,7 +28,7 @@ template <typename type>
 bool check(const minterms_t<type>& minterms, const terms_t<type>& primeimplicants)
 {
 	using byte = typename type::byte;
-	using pairbytes = decltype(type::pair::bytes);
+	using pair = typename type::pair;
 
 	std::set<byte> original;
 
@@ -37,40 +37,16 @@ bool check(const minterms_t<type>& minterms, const terms_t<type>& primeimplicant
 
 	std::set<byte> implied;
 
-	for (typename type::pair primeimplicant : primeimplicants)
+	for (const pair& primeimplicant : primeimplicants)
 	{
-		auto& pi_val = primeimplicant.first;
-		auto& pi_mask = primeimplicant.second;
+		const byte& pi_val = primeimplicant.first;
+		const byte& pi_mask = primeimplicant.second;
 
-		if (pi_mask == 0)
+		for (byte pi_bits = pi_mask; pi_bits > 0; pi_bits = (pi_mask & (pi_bits - 1)))
 		{
-			implied.emplace(primeimplicant.first);
+			implied.emplace(pi_val | pi_bits);
 		}
-		else
-		{
-			pairbytes bitmask[type::bits_nb];
-
-			int pos = 0;
-			for (pairbytes singlemask = 1; singlemask != 0; singlemask <<= 1)
-			{
-				if ((singlemask & pi_mask) != 0)
-					bitmask[pos++] = singlemask;
-			}
-
-			pairbytes curmask = 0;
-
-			for (;;)
-			{
-				implied.emplace(pi_val | curmask);
-				if (curmask == pi_mask) break;
-
-				for (int pos = 0; ; pos++)
-				{
-					curmask ^= bitmask[pos];
-					if ((curmask & bitmask[pos]) != 0) break;
-				}
-			}
-		}
+		implied.emplace(pi_val);
 	}
 
 

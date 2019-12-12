@@ -29,6 +29,19 @@ void init_LUT_bitscount()
 	}
 }
 
+template <typename int_t>
+unsigned char bitscount(const int_t value)
+{
+	const unsigned char* ptr = reinterpret_cast<const unsigned char*>(&value);
+	unsigned char result;
+	int size = sizeof(int_t);
+	while (size --> 0)
+	{
+		result += LUT_bitscount_256[*ptr++];
+	}
+	return result;
+}
+
 void init_LUTs()
 {
 	init_LUT_hex();

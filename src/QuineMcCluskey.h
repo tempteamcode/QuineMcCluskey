@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <array>
+#include <set>
 
 #include "terms.h"
 
@@ -26,6 +27,9 @@ using chart_t = std::vector<std::vector<typename type::big>>;
 
 template <typename type>
 void fill_chart(const minterms_t<type>& minterms, const terms_t<type>& primeimplicants, chart_t<type>& mintermschart, chart_t<type>& primeimplicantschart);
+
+template <typename type>
+void fill_chart_reduced(const minterms_t<type>& minterms, const terms_t<type>& primeimplicants, const chart_t<type>& mintermschart, const chart_t<type>& primeimplicantschart, minterms_t<type>& minterms_reduced, terms_t<type>& primeimplicants_reduced, chart_t<type>& mintermschart_reduced, chart_t<type>& primeimplicantschart_reduced);
 
 template <typename type>
 void primeimplicants_reduce_step_unique(const minterms_t<type>& minterms, const terms_t<type>& primeimplicants, chart_t<type>& mintermschart, chart_t<type>& primeimplicantschart, terms_t<type>& result);
@@ -164,6 +168,34 @@ void fill_chart(const minterms_t<type>& minterms, const terms_t<type>& primeimpl
 			}
 		}
 	}
+}
+
+template <typename type>
+void fill_chart_reduced(const minterms_t<type>& minterms, const terms_t<type>& primeimplicants, const chart_t<type>& mintermschart, const chart_t<type>& primeimplicantschart, minterms_t<type>& minterms_reduced, terms_t<type>& primeimplicants_reduced, chart_t<type>& mintermschart_reduced, chart_t<type>& primeimplicantschart_reduced)
+{
+	using big = typename type::big;
+
+	big mtsize = static_cast<big>(minterms.size());
+
+	minterms_reduced.clear();
+	minterms_reduced.reserve(mtsize);
+	for (big imt = 0; imt < mtsize; imt++)
+	{
+		if (!mintermschart[imt].empty())
+			minterms_reduced.push_back(minterms[imt]);
+	}
+
+	big pisize = static_cast<big>(primeimplicants.size());
+
+	primeimplicants_reduced.clear();
+	primeimplicants_reduced.reserve(pisize);
+	for (big ipi = 0; ipi < pisize; ipi++)
+	{
+		if (!primeimplicantschart[ipi].empty())
+			primeimplicants_reduced.push_back(primeimplicants[ipi]);
+	}
+
+	fill_chart<type>(minterms_reduced, primeimplicants_reduced, mintermschart_reduced, primeimplicantschart_reduced);
 }
 
 template <typename type>

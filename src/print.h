@@ -78,7 +78,7 @@ void print_sbox(std::ostream& out, const typename type::byte* sbox)
 
 	byte index = 0;
 	byte column = 0;
-	for (;;)
+	for(;;)
 	{
 		if (column == 0)
 		{
@@ -100,10 +100,10 @@ void print_table(std::ostream& out, const DDT_t<type>& table)
 	using big = typename type::big;
 
 	byte d1 = 0;
-	for (;;)
+	for(;;)
 	{
 		byte d2 = 0;
-		for (;;)
+		for(;;)
 		{
 			big count = table[d1][d2];
 

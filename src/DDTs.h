@@ -18,12 +18,12 @@ void fill_DDT(const typename type::byte* sbox, DDT_t<type>& table)
 	using byte = typename type::byte;
 
 	byte i1 = 0;
-	for (;;)
+	for(;;)
 	{
 		byte o1 = sbox[i1];
 
 		byte i2 = 0;
-		for (;;)
+		for(;;)
 		{
 			byte o2 = sbox[i2];
 
@@ -48,10 +48,10 @@ void DDT_extract_minterms(const DDT_t<type>& table, typename type::big value, bo
 	byte& d2 = tuple.second;
 
 	d1 = 0;
-	for (;;)
+	for(;;)
 	{
 		d2 = 0;
-		for (;;)
+		for(;;)
 		{
 			big count = table[d1][d2];
 
