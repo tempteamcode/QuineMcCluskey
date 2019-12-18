@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <array>
-#include <set>
 
 #include "terms.h"
 
@@ -87,30 +86,100 @@ void QuineMcCluskey(const minterms_t<type>& minterms, termsmap_t<type>& termsmap
 			big icurrsize = static_cast<big>(cellcurr.first.size());
 			big inextsize = static_cast<big>(cellnext.first.size());
 
-			const pair* itcurr = cellcurr.first.data();
-			for (big icurr = 0; icurr < icurrsize; itcurr++, icurr++)
+
+			if (inextsize > type::bits_nb * 100)
 			{
-				const pair& itemcurr = *itcurr;
-				const pair* itnext = cellnext.first.data();
-				for (big inext = 0; inext < inextsize; itnext++, inext++)
+				if (col == 0)
 				{
-					const pair& itemnext = *itnext;
-					diffs.bytes = itemcurr.bytes ^ itemnext.bytes;
-					if (bitscount(diffs.first) + bitscount(diffs.second) == 1)
+					std::sort(cellnext.first.begin(), cellnext.first.end());
+				}
+
+				const pair* itcurr = cellcurr.first.data();
+				for (big icurr = 0; icurr < icurrsize; itcurr++, icurr++)
+				{
+					const pair& itemcurr = *itcurr;
+
+					pair cellcomp[type::bits_nb];
+					big icompsize = 0;
+
 					{
-						tupleprod.first = (itemcurr.first & itemnext.first);
-						tupleprod.second = ((itemcurr.second | itemnext.second) | diffs.first);
-
-						auto pos = std::lower_bound(cellprod.first.begin(), cellprod.first.end(), tupleprod);
-						if (pos == cellprod.first.end() || (!((*pos) == tupleprod)))
+						pair itemcomp = itemcurr;
+						const byte bits = type::byte_mask ^ itemcurr.second;
+						for (byte bit = 1; bit != 0; bit <<= 1)
 						{
-							cellprod.first.insert(pos, tupleprod);
+							if ((bit & bits) != 0)
+							{
+								itemcomp.first = itemcurr.first ^ bit;
+								if ((itemcomp.first & bit) != 0)
+									cellcomp[icompsize++] = itemcomp;
+							}
 						}
+					}
 
-						cellcurr.second[icurr] = bool_byte_false;
-						cellnext.second[inext] = bool_byte_false;
+					if (icompsize > 1) std::sort(cellcomp, cellcomp + icompsize);
+
+					const auto itnextbeg = cellnext.first.begin();
+					const auto itnextend = cellnext.first.end();
+
+					auto itnextcur = itnextbeg;
+					for (big icomp = 0; icomp < icompsize; icomp++)
+					{
+						pair itemcomp = cellcomp[icomp];
+
+						itnextcur = std::lower_bound(itnextcur, itnextend, itemcomp);
+						if (itnextcur == itnextend) break;
+
+						if (*itnextcur == itemcomp)
+						{
+							const pair& itemnext = *itnextcur;
+							big inext = static_cast<big>(itnextcur - itnextbeg);
+
+							tupleprod.first = (itemcurr.first & itemnext.first);
+							tupleprod.second = ((itemcurr.second | itemnext.second) | (itemcurr.first ^ itemnext.first));
+
+							auto pos = std::lower_bound(cellprod.first.begin(), cellprod.first.end(), tupleprod);
+							if (pos == cellprod.first.end() || (!((*pos) == tupleprod)))
+							{
+								cellprod.first.insert(pos, tupleprod);
+							}
+
+							cellcurr.second[icurr] = bool_byte_false;
+							cellnext.second[inext] = bool_byte_false;
+						}
+					}
+
+				}
+
+			}
+			else
+			{
+
+				const pair* itcurr = cellcurr.first.data();
+				for (big icurr = 0; icurr < icurrsize; itcurr++, icurr++)
+				{
+					const pair& itemcurr = *itcurr;
+					const pair* itnext = cellnext.first.data();
+					for (big inext = 0; inext < inextsize; itnext++, inext++)
+					{
+						const pair& itemnext = *itnext;
+						diffs.bytes = itemcurr.bytes ^ itemnext.bytes;
+						if (bitscount(diffs.first) + bitscount(diffs.second) == 1)
+						{
+							tupleprod.first = (itemcurr.first & itemnext.first);
+							tupleprod.second = ((itemcurr.second | itemnext.second) | diffs.first);
+
+							auto pos = std::lower_bound(cellprod.first.begin(), cellprod.first.end(), tupleprod);
+							if (pos == cellprod.first.end() || (!((*pos) == tupleprod)))
+							{
+								cellprod.first.insert(pos, tupleprod);
+							}
+
+							cellcurr.second[icurr] = bool_byte_false;
+							cellnext.second[inext] = bool_byte_false;
+						}
 					}
 				}
+
 			}
 		}
 
