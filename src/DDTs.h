@@ -66,3 +66,35 @@ void DDT_extract_minterms(const DDT_t<type>& table, typename type::big value, bo
 		if (((++d1) & type::byte_mask) == 0) break;
 	}
 }
+
+template <typename type, typename typehalf>
+inline void term_split(const typename type::pair& term, std::pair<typename typehalf::pair, typename typehalf::pair>& result)
+{
+	typename typehalf::pair p1;
+	typename typehalf::pair p2;
+
+	p1.bytes = term.first;
+	p2.bytes = term.second;
+
+	{
+		typename typehalf::byte tmp;
+		tmp = p1.second;
+		p1.second = p2.first;
+		p2.first = tmp;
+	}
+
+	result.first = p1;
+	result.second = p2;
+}
+
+template <typename type, typename typehalf>
+void terms_split(const terms_t<type>& terms, std::vector<std::pair<typename typehalf::pair,typename typehalf::pair>>& result)
+{
+	size_t count = terms.size();
+
+	result.resize(count);
+	for (int i = 0; i < count; i++)
+	{
+		term_split<type,typehalf>(terms[i], result[i]);
+	}
+}

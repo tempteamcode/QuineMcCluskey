@@ -122,24 +122,24 @@ void print_table(std::ostream& out, const DDT_t<type>& table)
 }
 
 template <typename type>
-void print_table(std::ostream& out, const terms_t<type>& table)
+void print_terms(std::ostream& out, const terms_t<type>& terms)
 {
-	for (const typename type::pair& tuple : table)
+	for (const typename type::pair& term : terms)
 	{
-		print_bin_star<type>(out << '\n', tuple.first, tuple.second);
+		print_bin_star<type>(out << '\n', term.first, term.second);
 	}
 }
 
 template <typename type>
-void unprint_table(std::istream& in, terms_t<type>& table)
+void unprint_terms(std::istream& in, terms_t<type>& terms)
 {
-	typename type::pair tuple;
+	typename type::pair term;
 
 	char c;
 	while (in.get(c)) // '\n'
 	{
-		unprint_bin_star<type>(in, tuple.first, tuple.second);
-		table.push_back(tuple);
+		unprint_bin_star<type>(in, term.first, term.second);
+		terms.push_back(term);
 	}
 }
 
@@ -178,5 +178,17 @@ void unprint_chart(std::istream& in, chart_t<type>& chart)
 			in >> val;
 		}
 		in.get(c); // '\n'
+	}
+}
+
+template <typename typehalf>
+void print_termshalf(std::ostream& out, const std::vector<std::pair<typename typehalf::pair,typename typehalf::pair>>& termshalf)
+{
+	for (auto& termhalfpair : termshalf)
+	{
+		print_bin_star<typehalf>(out, termhalfpair.first.first, termhalfpair.first.second);
+		out << " --> ";
+		print_bin_star<typehalf>(out, termhalfpair.second.first, termhalfpair.second.second);
+		out << std::endl;
 	}
 }

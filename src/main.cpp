@@ -138,7 +138,7 @@ int main(int argc, const char* argv[])
 	{
 	std::ifstream fin_pi(prefix + "primeimplicants.txt");
 	if (fin_pi) {
-		unprint_table<with16bits>(fin_pi, primeimplicants);
+		unprint_terms<with16bits>(fin_pi, primeimplicants);
 	}
 	else {
 		std::ofstream fout_pi(prefix + "primeimplicants.txt");
@@ -147,10 +147,10 @@ int main(int argc, const char* argv[])
 		QuineMcCluskey<with16bits>(minterms, termsmap);
 		termsmap_extract_primeimplicants<with16bits>(termsmap, primeimplicants);
 
-		print_table<with16bits>(fout_pi, primeimplicants);
+		print_terms<with16bits>(fout_pi, primeimplicants);
 
 //		std::cout << "Result:" << std::endl;
-//		print_table<with16bits>(std::cout, primeimplicants);
+//		print_terms<with16bits>(std::cout, primeimplicants);
 //		std::cout << std::endl << std::endl;
 	}
 	}
@@ -194,10 +194,10 @@ int main(int argc, const char* argv[])
 		{
 			(*array_heuristics[arguments.heuristic_index])(minterms, primeimplicants, mintermschart, primeimplicantschart, primeimplicants_reduced);
 		}
-		print_table<with16bits>(fout_pireduced, primeimplicants_reduced);
+		print_terms<with16bits>(fout_pireduced, primeimplicants_reduced);
 
 //		std::cout << "Result:" << std::endl;
-//		print_table(std::cout, primeimplicants_reduced);
+//		print_terms(std::cout, primeimplicants_reduced);
 //		std::cout << std::endl << std::endl;
 	}
 
@@ -210,7 +210,7 @@ int main(int argc, const char* argv[])
 	{
 		std::ifstream fin_pireduced(prefix + "primeimplicants_reduced_" + names_heuristics[arguments.heuristic_index] + ".txt");
 		if (!fin_pireduced) return 1;
-		unprint_table<with16bits>(fin_pireduced, primeimplicants_reduced);
+		unprint_terms<with16bits>(fin_pireduced, primeimplicants_reduced);
 
 		bool correct = check<with16bits>(minterms, primeimplicants_reduced);
 		if (correct)
@@ -222,6 +222,15 @@ int main(int argc, const char* argv[])
 			std::cerr << "Mistake!" << std::endl;
 		}
 	}
+	}
+
+
+	{
+		std::ofstream fout_result(prefix + "primeimplicants_reduced_" + names_heuristics[arguments.heuristic_index] + ".txt");
+		if (!fout_result) return 1;
+		std::vector<std::pair<typename with8bits::pair,typename with8bits::pair>> result;
+		terms_split<with16bits,with8bits>(primeimplicants_reduced, result);
+		print_termshalf<with8bits>(fout_result, result);
 	}
 
 
